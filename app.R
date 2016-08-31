@@ -8,6 +8,7 @@ library(formattable)
 library(fplR)
 library(dplyr)
 library(curl)
+library(RMySQL)
 
 leagueID <- 388914
 
@@ -23,7 +24,17 @@ leagueID <- 388914
   return(sapply(id, function(x) fpl$teams[fpl$teams$id == x, 'short_name']))
 }
 
+## open database connection
+con <- file("pw.txt", "r")
+pw <- readLines(con)
+close(con)
 
+drv = dbDriver('MySQL')
+mydb = dbConnect(drv, 
+                 host = 'mysql3.gear.host', 
+                 dbname = 'mysqlgearhost', 
+                 user = 'fantasyfooty', 
+                 pass = pw)
 
 server <- function(input, output) {
   
@@ -69,7 +80,8 @@ server <- function(input, output) {
                                                                       )
       fpl$availablePlayers <- fplR::playerCount(fpl$teamsTable, fpl$all)
       setProgress(1, message = 'Loading Transfer Table')
-      fpl$transfers <- read.csv('./data/transfers.csv', stringsAsFactors = FALSE)
+##      fpl$transfers <- read.csv('./data/transfers.csv', stringsAsFactors = FALSE)
+      fpl$transfers <- fetch(dbSendQuery(mydb, 'select * from transferlist'))
     })
   })
   
@@ -228,7 +240,8 @@ server <- function(input, output) {
                                       Out = paste0(pOut$second_name, ' (', pOut$team, ')'),
                                       InRef = input$selTransferIn,
                                       In = paste0(pIn$second_name, ' (', pIn$team, ')')))
-    write.csv(fpl$transfers, './data/transfers.csv', row.names = FALSE)
+#    write.csv(fpl$transfers, './data/transfers.csv', row.names = FALSE)
+    dbWriteTable(mydb, value = fpl$transfers, name = 'transferlist', row.names = FALSE, overwrite = TRUE)
   })
   
 }
