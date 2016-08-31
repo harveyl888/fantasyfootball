@@ -240,12 +240,13 @@ ui <- fluidPage(
              column(5, div(DT::dataTableOutput('teamTable'), style = "font-size:80%"))
     ),
     tabPanel('Available Players',
-             fluidRow(
-               column(4, selectizeInput('selPosition', 'Filter by Position', choices = c('GLK', 'DEF', 'MID', 'FWD'), selected = c('GLK', 'DEF', 'MID', 'FWD'), multiple = TRUE)),
-               column(2, checkboxInput('chkAvailable', 'Only Available Players', value = TRUE))
-             ),
+             br(),
              fluidRow(
                column(7,
+                      fluidRow(
+                        column(4, selectizeInput('selPosition', 'Filter by Position', choices = c('GLK', 'DEF', 'MID', 'FWD'), selected = c('GLK', 'DEF', 'MID', 'FWD'), multiple = TRUE)),
+                        column(2, checkboxInput('chkAvailable', 'Only Available Players', value = TRUE))
+                      ),
                       DT::dataTableOutput('playerList')
                ),
                  column(5,
