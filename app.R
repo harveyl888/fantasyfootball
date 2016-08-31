@@ -7,6 +7,7 @@ library(DT)
 library(formattable)
 library(fplR)
 library(dplyr)
+library(curl)
 
 leagueID <- 388914
 
