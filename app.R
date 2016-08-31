@@ -68,7 +68,7 @@ server <- function(input, output) {
                                                                       )
       fpl$availablePlayers <- fplR::playerCount(fpl$teamsTable, fpl$all)
       setProgress(1, message = 'Loading Transfer Table')
-      fpl$transfers <- read.csv('/home/harvey/codes/fantasyfootball/data/transfers.csv', stringsAsFactors = FALSE)
+      fpl$transfers <- read.csv('./data/transfers.csv', stringsAsFactors = FALSE)
     })
   })
   
@@ -227,7 +227,7 @@ server <- function(input, output) {
                                       Out = paste0(pOut$second_name, ' (', pOut$team, ')'),
                                       InRef = input$selTransferIn,
                                       In = paste0(pIn$second_name, ' (', pIn$team, ')')))
-    write.csv(fpl$transfers, '/home/harvey/codes/fantasyfootball/data/transfers.csv', row.names = FALSE)
+    write.csv(fpl$transfers, './data/transfers.csv', row.names = FALSE)
   })
   
 }
