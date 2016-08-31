@@ -202,7 +202,9 @@ server <- function(input, output) {
   })
   
   output$tableTransfers <- DT::renderDataTable({
-    DT::datatable(fpl$transfers[order(fpl$transfers$Date, decreasing = TRUE), ],
+    df <- fpl$transfers[order(fpl$transfers$Date, decreasing = TRUE), c('Date', 'Team', 'Out', 'In')]
+    df$Date <- as.Date(df$Date)
+    DT::datatable(df,
                   extensions = 'Scroller',
                   options = list(dom = 't',
                                  paging = TRUE,
@@ -221,8 +223,10 @@ server <- function(input, output) {
     fpl$transfers <- rbind(fpl$transfers,
                            data.frame(Date = as.character(Sys.time()), 
                                       Team = input$selTransferTeam,
-                                      Out = paste0(pOut$second_name, ' (', pOut$element_type, ')'),
-                                      In = paste0(pIn$second_name, ' (', pIn$element_type, ')')))
+                                      OutRef = input$selTransferOut,
+                                      Out = paste0(pOut$second_name, ' (', pOut$team, ')'),
+                                      InRef = input$selTransferIn,
+                                      In = paste0(pIn$second_name, ' (', pIn$team, ')')))
     write.csv(fpl$transfers, '/home/harvey/codes/fantasyfootball/data/transfers.csv', row.names = FALSE)
   })
   
