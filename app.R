@@ -67,6 +67,8 @@ server <- function(input, output) {
                                  rename(total = total_points)
                                                                       )
       fpl$availablePlayers <- fplR::playerCount(fpl$teamsTable, fpl$all)
+      setProgress(1, message = 'Loading Transfer Table')
+      fpl$transfers <- read.csv('/home/harvey/codes/fantasyfootball/data/transfers.csv', stringsAsFactors = FALSE)
     })
   })
   
@@ -105,7 +107,7 @@ server <- function(input, output) {
 #                                                                                    ifelse(is_vice_captain == TRUE, 'red', 'black')))),
 #                        second_name = formatter('span', style = ~ style(color=ifelse(is_captain == TRUE, 'green', 
 #                                                                                          ifelse(is_vice_captain == TRUE, 'red', 'black')))),
-                       list(C = formatter('span', style = x ~ style(color = ifelse(x == 'C', "red", "green")),
+                       list(C = formatter('span', style = x ~ style(color = ifelse(x == 'C', "green", "orange")),
                                              x ~ icontext(ifelse(x == 'C', 'user', 'user'))),
                        P = formatter('span', style = x ~ style(color = ifelse(x <= 11, "green", "red")),
                                              x ~ icontext(ifelse(x <= 11, "ok", "remove")))
@@ -173,6 +175,57 @@ server <- function(input, output) {
 #       rownames = FALSE)
   })
   
+  output$uiTransferTeamName <- renderUI({
+    req(fpl$league)
+    selectInput('selTransferTeam', 'Team', fpl$league$standings$results$entry_name)
+  })
+  
+  transferTeam <- reactive({
+    req(input$selTransferTeam)
+    teamID <- fpl$league$standings$results[fpl$league$standings$results$entry_name == input$selTransferTeam, 'entry']
+    fpl$teamsTable[[paste0('T_', teamID)]]
+  })
+  
+  output$uiTransferPlayerOut <- renderUI({
+    req(input$selTransferTeam)
+#    teamID <- fpl$league$standings$results[fpl$league$standings$results$entry_name == input$selTransferTeam, 'entry']
+    teamPlayers <- setNames(transferTeam()[['element']], transferTeam()[['second_name']])
+    selectInput('selTransferOut', 'Player Out', teamPlayers)
+  })
+  
+  output$uiTransferPlayerIn <- renderUI({
+     req(input$selTransferTeam)
+     playerOutPos <- transferTeam()[transferTeam()['element'] == input$selTransferOut, 'pos']
+     df.filter <- fpl$availablePlayers[fpl$availablePlayers$element_type == playerOutPos, ]
+     playersIn <- setNames(df.filter[['element']], paste0(df.filter[['second_name']], ' (', df.filter[['team']], ')'))
+     selectInput('selTransferIn', 'Player In', playersIn)
+  })
+  
+  output$tableTransfers <- DT::renderDataTable({
+    DT::datatable(fpl$transfers[order(fpl$transfers$Date, decreasing = TRUE), ],
+                  extensions = 'Scroller',
+                  options = list(dom = 't',
+                                 paging = TRUE,
+                                 deferRender = TRUE,
+                                 scrollY = 100,
+                                 scroller = TRUE
+                  ),
+                  selection = 'none',
+                  rownames = FALSE,
+                  escape = FALSE) 
+  })
+  
+  observeEvent(input$butTransfer, {
+    pIn <- fpl$availablePlayers[fpl$availablePlayers$element == input$selTransferIn, ]
+    pOut <- fpl$availablePlayers[fpl$availablePlayers$element == input$selTransferOut, ]
+    fpl$transfers <- rbind(fpl$transfers,
+                           data.frame(Date = as.character(Sys.time()), 
+                                      Team = input$selTransferTeam,
+                                      Out = paste0(pOut$second_name, ' (', pOut$element_type, ')'),
+                                      In = paste0(pIn$second_name, ' (', pIn$element_type, ')')))
+    write.csv(fpl$transfers, '/home/harvey/codes/fantasyfootball/data/transfers.csv', row.names = FALSE)
+  })
+  
 }
 
 ui <- fluidPage(
@@ -187,9 +240,39 @@ ui <- fluidPage(
                column(4, selectizeInput('selPosition', 'Filter by Position', choices = c('GLK', 'DEF', 'MID', 'FWD'), selected = c('GLK', 'DEF', 'MID', 'FWD'), multiple = TRUE)),
                column(2, checkboxInput('chkAvailable', 'Only Available Players', value = TRUE))
              ),
-             column(8,
-                    DT::dataTableOutput('playerList')
-             )
+             fluidRow(
+               column(7,
+                      DT::dataTableOutput('playerList')
+               ),
+                 column(5,
+                        wellPanel(
+                          h3('Transfers'),
+                          fluidRow(
+                            div(DT::dataTableOutput('tableTransfers'), style = "font-size:80%")
+                          ),
+                          br(),
+                          hr(),
+                          br(),
+                          fluidRow(
+                            column(7,
+                                   uiOutput('uiTransferTeamName')
+                            ),
+                            column(4, offset = 1,
+                                   actionButton('butTransfer', 'Transfer', icon('upload'), class = 'btn-success')
+                            )
+                          ),
+                        fluidRow(
+                          column(6, 
+                                 uiOutput('uiTransferPlayerOut')
+                          ),
+                          column(6, 
+                                 uiOutput('uiTransferPlayerIn')
+                          )
+                        )
+                 )
+               )
+               )
+
              )
   )
 )
