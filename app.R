@@ -77,7 +77,7 @@ server <- function(input, output) {
                                  rename(pos = element_type) %>%
                                  rename(pts = event_points) %>%
                                  rename(total = total_points)
-                                                                      )
+                               )
       fpl$availablePlayers <- fplR::playerCount(fpl$teamsTable, fpl$all)
       setProgress(1, message = 'Loading Transfer Table')
 ##      fpl$transfers <- read.csv('./data/transfers.csv', stringsAsFactors = FALSE)
@@ -215,8 +215,18 @@ server <- function(input, output) {
   })
   
   output$tableTransfers <- DT::renderDataTable({
-    df <- fpl$transfers[order(fpl$transfers$Date, decreasing = TRUE), c('Date', 'Team', 'Out', 'In')]
-    df$Date <- as.Date(df$Date)
+    
+    df <- fpl$transfers %>%
+      left_join(fpl$all$elements, by = c('OutRef' = 'id')) %>% 
+      mutate(Out = paste0(second_name, ' (', .teamID(fpl$all, team), ')')) %>% 
+      left_join(fpl$all$elements, by = c('InRef' = 'id')) %>% 
+      mutate(In = paste0(second_name.y, ' (', .teamID(fpl$all, team.y), ')')) %>% 
+      select(Date, Team, Out, In) %>%
+      arrange(desc(Date)) %>%
+      mutate(Date = as.Date(Date))
+    
+#    df <- fpl$transfers[order(fpl$transfers$Date, decreasing = TRUE), c('Date', 'Team', 'Out', 'In')]
+#    df$Date <- as.Date(df$Date)
     DT::datatable(df,
                   extensions = 'Scroller',
                   options = list(dom = 't',
@@ -236,9 +246,9 @@ server <- function(input, output) {
     fpl$transfers <- rbind(fpl$transfers,
                            data.frame(Date = as.character(Sys.time()), 
                                       Team = input$selTransferTeam,
-                                      OutRef = input$selTransferOut,
+                                      OutRef = as.numeric(input$selTransferOut),
                                       Out = paste0(pOut$second_name, ' (', pOut$team, ')'),
-                                      InRef = input$selTransferIn,
+                                      InRef = as.numeric(input$selTransferIn),
                                       In = paste0(pIn$second_name, ' (', pIn$team, ')')))
 #    write.csv(fpl$transfers, './data/transfers.csv', row.names = FALSE)
     dbWriteTable(mydb, value = fpl$transfers, name = 'transferlist', row.names = FALSE, overwrite = TRUE)
