@@ -45,20 +45,8 @@ server <- function(input, output) {
       incProgress(0.5, message = 'Grabbing Player Details')
       fpl$all <- fplR::getFPLData()
       fpl$currentWeek <- which(fpl$all$events$is_current)
-      
-#       currentDeadline <- as.Date(fpl$all$events[which(fpl$all$events$is_current), 'deadline_time'])
-#       if (as.numeric(difftime(Sys.Date(), currentDeadline)) == 0) {
-#         fpl$currentWeek <- which(fpl$all$events$is_current) - 1
-#       } else {
-#         fpl$currentWeek <- which(fpl$all$events$is_current)
-#       }
-      
       incProgress(1.0, message = 'Grabbing League Table')
       fpl$league <- fplR::getLeagueTable(leagueID, NULL)
-#      fpl$league <- fplR::getLeagueTable(leagueID, fpl$currentWeek)
-      
-#      if (length(fpl$league$standings$results) < 1)  fpl$league <- fplR::getLeagueTable(leagueID, fpl$currentWeek - 1)
-
       entries <- fpl$league$standings$results$entry
       setProgress(0, message = 'Grabbing Teams')
       l.teams <- list()
@@ -80,7 +68,6 @@ server <- function(input, output) {
                                )
       fpl$availablePlayers <- fplR::playerCount(fpl$teamsTable, fpl$all)
       setProgress(1, message = 'Loading Transfer Table')
-##      fpl$transfers <- read.csv('./data/transfers.csv', stringsAsFactors = FALSE)
       fpl$transfers <- fetch(dbSendQuery(mydb, 'select * from transferlist'))
     })
   })
@@ -111,15 +98,10 @@ server <- function(input, output) {
     team_table[which(team_table$is_captain), 'C'] <- 'C'
     team_table[which(team_table$is_vice_captain), 'C'] <- 'V'
     team_table$name <- paste(team_table$first_name, team_table$second_name)
-#    team_table <- team_table[, c(1:7, 13, 8:12)]
     team_table <- team_table[, c(1, 3:7, 2, 13, 8:12)]
     
     as.datatable(
       formattable(team_table, 
-#                   list(first_name = formatter('span', style = ~ style(color=ifelse(is_captain == TRUE, 'green', 
-#                                                                                    ifelse(is_vice_captain == TRUE, 'red', 'black')))),
-#                        second_name = formatter('span', style = ~ style(color=ifelse(is_captain == TRUE, 'green', 
-#                                                                                          ifelse(is_vice_captain == TRUE, 'red', 'black')))),
                        list(C = formatter('span', style = x ~ style(color = ifelse(x == 'C', "green", "orange")),
                                              x ~ icontext(ifelse(x == 'C', 'user', 'user'))),
                        P = formatter('span', style = x ~ style(color = ifelse(x <= 11, "green", "red")),
@@ -160,32 +142,10 @@ server <- function(input, output) {
                                        deferRender = TRUE,
                                        scrollY = 400,
                                        scroller = TRUE
-#                                        columnDefs = list(list(targets = 0, render = JS(
-#                                          "function(data, type, row, meta) { return( data == 0 ? '<span>a</span>' : '<span>X</span>' ) }"
-#                                            
-#                                          
-#                                        )))
                                        ),
                         selection = 'none',
                         rownames = FALSE,
                   escape = FALSE)
-                  
-
-#     as.datatable(
-#       formattable(
-#         df, list(
-#           available = formatter('span', style = x ~ style(color = ifelse(x == 0, "green", "red")),
-#                                 x ~ icontext(ifelse(x == 0, 'ok-sign', 'remove-sign')))
-#           
-#         )
-#       ),
-#       extensions = 'Scroller',
-#       options = list(paging = TRUE,
-#                      deferRender = TRUE,
-#                      scrollY = 400,
-#                      scroller = TRUE),
-#       selection = 'none',
-#       rownames = FALSE)
   })
   
   output$uiTransferTeamName <- renderUI({
@@ -201,7 +161,6 @@ server <- function(input, output) {
   
   output$uiTransferPlayerOut <- renderUI({
     req(input$selTransferTeam)
-#    teamID <- fpl$league$standings$results[fpl$league$standings$results$entry_name == input$selTransferTeam, 'entry']
     teamPlayers <- setNames(transferTeam()[['element']], transferTeam()[['second_name']])
     selectInput('selTransferOut', 'Player Out', teamPlayers)
   })
@@ -225,14 +184,12 @@ server <- function(input, output) {
       arrange(desc(Date)) %>%
       mutate(Date = as.Date(Date))
     
-#    df <- fpl$transfers[order(fpl$transfers$Date, decreasing = TRUE), c('Date', 'Team', 'Out', 'In')]
-#    df$Date <- as.Date(df$Date)
     DT::datatable(df,
                   extensions = 'Scroller',
                   options = list(dom = 't',
                                  paging = TRUE,
                                  deferRender = TRUE,
-                                 scrollY = 100,
+                                 scrollY = 200,
                                  scroller = TRUE
                   ),
                   selection = 'none',
@@ -250,7 +207,6 @@ server <- function(input, output) {
                                       Out = paste0(pOut$second_name, ' (', pOut$team, ')'),
                                       InRef = as.numeric(input$selTransferIn),
                                       In = paste0(pIn$second_name, ' (', pIn$team, ')')))
-#    write.csv(fpl$transfers, './data/transfers.csv', row.names = FALSE)
     dbWriteTable(mydb, value = fpl$transfers, name = 'transferlist', row.names = FALSE, overwrite = TRUE)
   })
   
@@ -268,8 +224,8 @@ ui <- fluidPage(
              fluidRow(
                column(7,
                       fluidRow(
-                        column(4, selectizeInput('selPosition', 'Filter by Position', choices = c('GLK', 'DEF', 'MID', 'FWD'), selected = c('GLK', 'DEF', 'MID', 'FWD'), multiple = TRUE)),
-                        column(2, checkboxInput('chkAvailable', 'Only Available Players', value = TRUE))
+                        column(6, selectizeInput('selPosition', 'Filter by Position', choices = c('GLK', 'DEF', 'MID', 'FWD'), selected = c('GLK', 'DEF', 'MID', 'FWD'), multiple = TRUE)),
+                        column(6, checkboxInput('chkAvailable', 'Only Available Players', value = TRUE))
                       ),
                       DT::dataTableOutput('playerList')
                ),
