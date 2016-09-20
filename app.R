@@ -30,11 +30,6 @@ pw <- readLines(con)
 close(con)
 
 drv = dbDriver('MySQL')
-mydb = dbConnect(drv, 
-                 host = 'mysql3.gear.host', 
-                 dbname = 'mysqlgearhost', 
-                 user = 'fantasyfooty', 
-                 pass = pw)
 
 server <- function(input, output) {
   
@@ -68,7 +63,9 @@ server <- function(input, output) {
                                )
       fpl$availablePlayers <- fplR::playerCount(fpl$teamsTable, fpl$all)
       setProgress(1, message = 'Loading Transfer Table')
+      mydb = dbConnect(drv, host = 'mysql3.gear.host', dbname = 'mysqlgearhost', user = 'fantasyfooty', pass = pw)
       fpl$transfers <- fetch(dbSendQuery(mydb, 'select * from transferlist'))
+      dbDisconnect(mydb)
     })
   })
   
@@ -207,7 +204,9 @@ server <- function(input, output) {
                                       Out = paste0(pOut$second_name, ' (', pOut$team, ')'),
                                       InRef = as.numeric(input$selTransferIn),
                                       In = paste0(pIn$second_name, ' (', pIn$team, ')')))
+    mydb = dbConnect(drv, host = 'mysql3.gear.host', dbname = 'mysqlgearhost', user = 'fantasyfooty', pass = pw)
     dbWriteTable(mydb, value = fpl$transfers, name = 'transferlist', row.names = FALSE, overwrite = TRUE)
+    dbDisconnect(mydb)
   })
   
 }
