@@ -1,5 +1,5 @@
 ##
-## Fantasy football 2016/17
+## Fantasy football 2017/18
 ##
 
 library(shiny)
@@ -10,7 +10,11 @@ library(dplyr)
 library(curl)
 library(RMySQL)
 
-leagueID <- 388914
+leagueID <- 34512
+
+## Create a new table
+## dbSendStatement(mydb, 'CREATE TABLE transferlist2017 (`Date` TEXT NULL, `Team` TEXT NULL, `OutRef` DOUBLE NULL, `Out` TEXT NULL, `InRef` DOUBLE NULL, `In` TEXT NULL);')
+
 
 
 ## return position name from ID
@@ -64,7 +68,7 @@ server <- function(input, output) {
       fpl$availablePlayers <- fplR::playerCount(fpl$teamsTable, fpl$all)
       setProgress(1, message = 'Loading Transfer Table')
       mydb = dbConnect(drv, host = 'mysql3.gear.host', dbname = 'mysqlgearhost', user = 'fantasyfooty', pass = pw)
-      fpl$transfers <- fetch(dbSendQuery(mydb, 'select * from transferlist'))
+      fpl$transfers <- fetch(dbSendQuery(mydb, 'select * from transferlist2017'))
       dbDisconnect(mydb)
     })
   })
