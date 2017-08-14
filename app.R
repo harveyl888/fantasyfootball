@@ -169,7 +169,7 @@ server <- function(input, output) {
   output$uiTransferPlayerIn <- renderUI({
      req(input$selTransferTeam)
      playerOutPos <- transferTeam()[transferTeam()['element'] == input$selTransferOut, 'pos']
-     df.filter <- fpl$availablePlayers[fpl$availablePlayers$element_type == playerOutPos, ]
+     df.filter <- fpl$availablePlayers[(fpl$availablePlayers$element_type == playerOutPos & fpl$availablePlayers$count == 0), ]
      playersIn <- setNames(df.filter[['element']], paste0(df.filter[['second_name']], ' (', df.filter[['team']], ')'))
      selectInput('selTransferIn', 'Player In', playersIn)
   })
