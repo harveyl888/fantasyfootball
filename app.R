@@ -209,7 +209,7 @@ server <- function(input, output) {
                                       InRef = as.numeric(input$selTransferIn),
                                       In = paste0(pIn$second_name, ' (', pIn$team, ')')))
     mydb = dbConnect(drv, host = 'mysql3.gear.host', dbname = 'mysqlgearhost', user = 'fantasyfooty', pass = pw)
-    dbWriteTable(mydb, value = fpl$transfers, name = 'transferlist', row.names = FALSE, overwrite = TRUE)
+    dbWriteTable(mydb, value = fpl$transfers, name = 'transferlist2017', row.names = FALSE, overwrite = TRUE)
     dbDisconnect(mydb)
   })
   
